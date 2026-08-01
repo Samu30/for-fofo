@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Fofo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400&family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: #101014;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.4s ease;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .slide .photo-frame {
+    position: absolute;
+    inset: 0;
+    background: #17171c;
+    overflow: hidden;
+  }
+
+  .slide .photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: saturate(0.92) contrast(1.02);
+    transform: scale(1.04);
+    transition: transform 9s ease;
+  }
+
+  .slide.active .photo-frame img {
+    transform: scale(1.0);
+  }
+
+  .slide .photo-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(10,10,13,0.88) 0%, rgba(10,10,13,0.35) 38%, rgba(10,10,13,0.05) 62%, rgba(10,10,13,0.25) 100%);
+  }
+
+  .photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4a4a54;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding: 2rem;
+    border: 1px dashed #33333c;
+  }
+
+  .caption {
+    position: relative;
+    z-index: 2;
+    padding: 0 8vw 12vh 8vw;
+    max-width: 820px;
+  }
+
+  .caption .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #e8b978;
+    opacity: 0.85;
+    margin-bottom: 0.9rem;
+    display: block;
+  }
+
+  .caption p {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: clamp(1.6rem, 4vw, 2.9rem);
+    line-height: 1.32;
+    color: #f2ede4;
+    text-shadow: 0 2px 24px rgba(0,0,0,0.4);
+  }
+
+  .caption p em {
+    color: #c98b8b;
+    font-style: italic;
+  }
+
+  /* Arabic / RTL support */
+  body.lang-ar {
+    direction: rtl;
+  }
+
+  body.lang-ar .caption {
+    text-align: right;
+  }
+
+  body.lang-ar .caption .eyebrow {
+    font-family: 'Tajawal', sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  body.lang-ar .caption p {
+    font-family: 'Amiri', serif;
+    font-weight: 400;
+    line-height: 1.9;
+    font-size: clamp(1.5rem, 4.2vw, 2.6rem);
+  }
+
+  body.lang-ar .caption p em {
+    font-style: normal;
+    color: #c98b8b;
+  }
+
+  body.lang-ar .start-overlay .title {
+    font-family: 'Amiri', serif;
+    font-style: normal;
+  }
+
+  body.lang-ar .start-overlay .sub {
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  body.lang-ar .start-btn {
+    font-family: 'Tajawal', sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  .slide[data-final="true"] .caption p {
+    font-size: clamp(1.9rem, 5vw, 3.6rem);
+  }
+
+  /* Progress dots */
+  .progress {
+    position: absolute;
+    top: 5vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 7px;
+    z-index: 10;
+  }
+
+  .progress .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(242,237,228,0.22);
+    transition: background 0.4s ease, transform 0.4s ease;
+  }
+
+  .progress .dot.active {
+    background: #e8b978;
+    transform: scale(1.3);
+  }
+
+  /* Controls */
+  .controls {
+    position: absolute;
+    bottom: 4vh;
+    right: 5vw;
+    z-index: 10;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .ctrl-btn {
+    background: rgba(242,237,228,0.08);
+    border: 1px solid rgba(242,237,228,0.18);
+    color: #f2ede4;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    backdrop-filter: blur(6px);
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+
+  .ctrl-btn:hover { background: rgba(242,237,228,0.16); }
+  .ctrl-btn:active { transform: scale(0.92); }
+
+  .music-btn.playing { border-color: #e8b978; color: #e8b978; }
+
+  /* Tap zones for navigation */
+  .tap-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    z-index: 5;
+    cursor: pointer;
+  }
+  .tap-zone.left { left: 0; }
+  .tap-zone.right { right: 0; }
+
+  /* Start overlay */
+  .start-overlay {
+    position: absolute;
+    inset: 0;
+    background: #101014;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.6rem;
+    text-align: center;
+    padding: 2rem;
+    transition: opacity 1s ease;
+  }
+
+  .start-overlay .title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    color: #f2ede4;
+  }
+
+  .start-overlay .sub {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: #8a8a94;
+    max-width: 340px;
+  }
+
+  .start-btn {
+    margin-top: 0.6rem;
+    background: transparent;
+    border: 1px solid #e8b978;
+    color: #e8b978;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.9rem 2.2rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .start-btn:hover { background: #e8b978; color: #101014; }
+
+  .start-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  audio { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .photo-frame img { transition: none !important; }
+  }
+</style>
+</head>
+<body class="lang-ar">
+
+<div class="stage">
+
+  <div class="progress" id="progress"></div>
+
+  <!-- SLIDES -->
+  <div class="slides" id="slides">
+
+    <div class="slide" data-index="0">
+      <div class="photo-frame">
+        <img src="pics/first.jpeg">
+      </div>
+      <div class="caption">
+        <span class="eyebrow">To Fofo</span>
+        <p>فوفو حبيبي, اشتقت لك</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="1">
+      <div class="photo-frame">
+        <img src="pics/gorilla.jpeg">
+      </div>
+      <div class="caption">
+        <p>انا لسا سوسو</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="2">
+      <div class="photo-frame">
+        <img src="pics/car.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي صار يلعب  <em>روبلوكس</em> عشانك و صار يحبها عشانها صارت حاجة مشتركة بينكم</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="3">
+      <div class="photo-frame">
+        <img src="pics/fear.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي اكثر شعور بيكرهه هو الخوف و برضو بحب هاد الشعور معك</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="4">
+      <div class="photo-frame">
+        <img src="pics/piano.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي تعلمتي اغاني على البيانو عشانه و هو تعلم عشانك</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="5">
+      <div class="photo-frame">
+        <img src="pics/wallpa.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي حفظ تفاصيل غرفتك من تصويرك بس
+          ملحوظة: وقفي و ادخلي روبلوكس و سوي لي جوين
+        </p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="6">
+      <div class="photo-frame">
+        <img src="pics/piss.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي شخ على الدريق لورد معك</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="7">
+      <div class="photo-frame">
+        <img src="pics/wall.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي بيقعد يتفرج على جمال الالعاب معك</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="8">
+      <div class="photo-frame">
+        <img src="pics/imp.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي بيقعد يضحك على اتفه الاشياء معك</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="9">
+      <div class="photo-frame">
+        <img src="pics/log.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي عصبيته معك احلى عنده من احلى ضحكة مع اي حدا تاني</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="10">
+      <div class="photo-frame">
+       <img src="pics/hug.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي كنتي واقفه معه في شدته دايمًا</p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="11">
+      <div class="photo-frame">
+      <img src="pics/clean.jpeg">
+      </div>
+      <div class="caption">
+        <p>نفسه سوسو اللي اكتشف انه بيحب العاب التنظيف منك
+          وقفي و شوفي ستيم
+        </p>
+      </div>
+    </div>
+
+    <div class="slide" data-index="12" data-final="true">
+      <div class="photo-frame">
+        <img src="pics/feelings.jpeg">
+      </div>
+      <div class="caption">
+        <span class="eyebrow">I'm sorry, Fofo</span>
+        <p>نفسه سوسو اللي انتي قمره وهو شمسك, اشتقت لك كتير يا روحي
+          سوسو
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation tap zones -->
+  <div class="tap-zone left" id="tapLeft"></div>
+  <div class="tap-zone right" id="tapRight"></div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="ctrl-btn music-btn" id="musicBtn" aria-label="Toggle music">♪</button>
+    <button class="ctrl-btn" id="prevBtn" aria-label="Previous slide">‹</button>
+    <button class="ctrl-btn" id="nextBtn" aria-label="Next slide">›</button>
+  </div>
+
+  <!-- Start overlay -->
+  <div class="start-overlay" id="startOverlay">
+    <div class="title">For Fofo</div>
+    <div class="sub">A few things I needed to say. Turn your sound on.</div>
+    <button class="start-btn" id="startBtn">Begin</button>
+  </div>
+
+  <!-- AUDIO: replace src with your song file path -->
+  <audio id="bgMusic" loop>
+    <source src="FOFOIN.mp3" type="audio/mpeg">
+  </audio>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  let autoTimer = null;
+  const AUTO_ADVANCE_MS = 6000;
+
+  // Build progress dots
+  const progressEl = document.getElementById('progress');
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    progressEl.appendChild(dot);
+  });
+  const dots = document.querySelectorAll('.dot');
+
+  function showSlide(index, {restartAuto = true} = {}) {
+    current = (index + total) % total;
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    if (restartAuto) resetAutoAdvance();
+  }
+
+  function next() { showSlide(current + 1); }
+  function prev() { showSlide(current - 1); }
+
+  function resetAutoAdvance() {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = setInterval(() => {
+      if (current < total - 1) next();
+      else clearInterval(autoTimer);
+    }, AUTO_ADVANCE_MS);
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+  document.getElementById('tapRight').addEventListener('click', next);
+  document.getElementById('tapLeft').addEventListener('click', prev);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') prev();
+  });
+
+  // Music
+  const music = document.getElementById('bgMusic');
+  const musicBtn = document.getElementById('musicBtn');
+  let musicPlaying = false;
+
+  function toggleMusic() {
+    if (musicPlaying) {
+      music.pause();
+      musicBtn.classList.remove('playing');
+    } else {
+      music.play().catch(() => {});
+      musicBtn.classList.add('playing');
+    }
+    musicPlaying = !musicPlaying;
+  }
+  musicBtn.addEventListener('click', toggleMusic);
+
+  // Start overlay
+  document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('startOverlay').classList.add('hidden');
+    showSlide(0);
+    music.play().catch(() => {});
+    musicPlaying = true;
+    musicBtn.classList.add('playing');
+  });
+
+  showSlide(0, {restartAuto: false});
+</script>
+
+</body>
+</html>
